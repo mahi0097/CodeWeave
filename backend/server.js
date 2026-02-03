@@ -7,6 +7,8 @@ import { Server } from "socket.io";
 import path, { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import compilerRoutes from "./routes/compilerRoutes.js";
+
 
 // Import configurations
 import { serverConfig, staticConfig } from './config/server.js';
@@ -35,6 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(requestLogger);
 
 // API routes
+app.use("/api/compiler", compilerRoutes);
 app.use('/', httpRoutes);
 
 // Serve static files from frontend build
@@ -46,13 +49,14 @@ app.use(express.static(join(__dirname, staticConfig.path)));
 socketRoutes.initializeSocketHandlers(io);
 
 // Catch-all route for SPA (Single Page Application)
-app.get("/*", (req, res) => {
+app.get("*", (req, res) => {
   res.sendFile(join(__dirname, staticConfig.path, staticConfig.options.index));
 });
 
 // Error handling middleware (must be last)
 app.use(notFoundHandler);
 app.use(errorHandler);
+
 
 // Start server
 const port = serverConfig.port;

@@ -3,8 +3,10 @@ import http from "http";
 import { Server } from "socket.io";
 import path, { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import compilerRoute from "./routes/compiler";
 
 const app = express();
+app.use(express.json());
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -91,11 +93,11 @@ io.on("connection", (socket) => {
   });
 });
 
-const port = 3000;
+const port = 3001;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 app.use(express.static(path.join(__dirname, "../frontend/vite-project/dist")));
-
+app.use("/api/compiler", compilerRoute);
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/vite-project/dist/index.html"));
 });

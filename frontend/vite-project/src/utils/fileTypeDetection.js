@@ -157,6 +157,34 @@ const LANGUAGE_DISPLAY_NAMES = {
 };
 
 /**
+ * Judge0 language IDs mapping
+ * https://ce.judge0.com/languages
+ */
+const JUDGE0_LANGUAGE_IDS = {
+  javascript: 63,
+  typescript: 74,
+  python: 71,
+  java: 62,
+  c: 50,
+  cpp: 54,
+  csharp: 51,
+  php: 68,
+  ruby: 72,
+  go: 60,
+  rust: 73,
+  shell: 46,
+  sql: 82,
+  kotlin: 78,
+  swift: 83,
+  scala: 81,
+  lua: 64,
+  perl: 85,
+  powershell: 100,
+  r: 80,
+  plaintext: 43 // Plain Text (safe fallback)
+};
+
+/**
  * Popular languages for quick selection
  */
 const POPULAR_LANGUAGES = [
@@ -266,4 +294,13 @@ export function getFileExtensionsForLanguage(language) {
   }
   
   return extensions;
+}
+
+/**
+ * Gets Judge0 language ID for a Monaco language
+ * @param {string} language - Monaco Editor language identifier
+ * @returns {number} Judge0 language ID
+ */
+export function getJudge0LanguageId(language) {
+  return JUDGE0_LANGUAGE_IDS[language] || 63; // Default: JavaScript
 }

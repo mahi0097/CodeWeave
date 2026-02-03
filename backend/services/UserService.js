@@ -50,7 +50,8 @@ class UserService {
   updateUserTyping(socketId, isTyping) {
     const user = this.getUser(socketId);
     if (user) {
-      return user.setTyping(isTyping);
+      user.isTyping = isTyping;
+      return true;
     }
     return false;
   }
@@ -105,7 +106,7 @@ class UserService {
   getUsersInRoom(roomId) {
     const usersInRoom = [];
     for (const [socketId, user] of this.users) {
-      if (user.getCurrentRoom() === roomId) {
+      if (user.currentRoom === roomId) {
         usersInRoom.push(user.getInfo());
       }
     }
@@ -130,7 +131,7 @@ class UserService {
     };
 
     for (const [socketId, user] of this.users) {
-      if (user.getCurrentRoom()) {
+      if (user.currentRoom) {
         stats.usersInRooms++;
       }
       if (user.isInCall) {

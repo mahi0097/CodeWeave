@@ -16,6 +16,11 @@ class User {
     this.currentRoom = roomId;
     return this; // allow chaining
   }
+  
+  getCurrentRoom() {
+  return this.currentRoom;
+  }
+
 
   leaveRoom() {
     const leftRoom = this.currentRoom;
