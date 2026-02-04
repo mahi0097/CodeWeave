@@ -4,6 +4,13 @@
   A real-time collaborative code editor developed as a <b>college minor project</b>.
 </p>
 
+<p align="center">
+  🌐 <b>Live Demo:</b>  
+  <a href="https://code-weave-b24u.vercel.app/" target="_blank">
+    https://code-weave-b24u.vercel.app/
+  </a>
+</p>
+
 ---
 
 ## 📌 Project Overview
