@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import "./App.css";
 import io from "socket.io-client";
-const socket = io("http://localhost:3000");
+const socket = io("https://codeweave-sxby.onrender.com");
 import Editor from "@monaco-editor/react";
 import VideoCall from "./VideoCall";
 import VersionHistory from "./VersionHistory";
@@ -155,7 +155,7 @@ const App = () => {
       console.log("Code length:", codeToRun.length);
       console.log("Current file:", activeFile || filename);
 
-      const res = await fetch("http://localhost:3000/api/compiler/run", {
+      const res = await fetch("https://codeweave-sxby.onrender.com/api/compiler/run", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
