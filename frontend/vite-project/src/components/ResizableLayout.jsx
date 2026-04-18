@@ -1,10 +1,12 @@
+// frontend/vite-project/src/components/ResizableLayout.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import './ResizableLayout.css';
 
 const ResizableLayout = ({ 
   sidebar, 
   editor, 
-  chatPanel, 
+  rightPanel,
+  isRightPanelClosed, // Add this prop
   onChatDetach,
   onChatMinimize,
   isChatDetached,
@@ -18,10 +20,10 @@ const ResizableLayout = ({
   userName,
   chatPosition = { x: 100, y: 100 }
 }) => {
-  const [sidebarWidth, setSidebarWidth] = useState(250);
-  const [chatWidth, setChatWidth] = useState(300);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [rightPanelWidth, setRightPanelWidth] = useState(320);
   const [isResizingSidebar, setIsResizingSidebar] = useState(false);
-  const [isResizingChat, setIsResizingChat] = useState(false);
+  const [isResizingRightPanel, setIsResizingRightPanel] = useState(false);
   const [isDraggingChat, setIsDraggingChat] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [floatingChatPosition, setFloatingChatPosition] = useState(chatPosition);
@@ -30,7 +32,7 @@ const ResizableLayout = ({
 
   const containerRef = useRef(null);
   const sidebarResizeRef = useRef(null);
-  const chatResizeRef = useRef(null);
+  const rightPanelResizeRef = useRef(null);
   const floatingChatRef = useRef(null);
 
   // Sidebar resize functionality
@@ -39,10 +41,10 @@ const ResizableLayout = ({
     e.preventDefault();
   };
 
-  // Chat resize functionality
-  const handleChatMouseDown = (e) => {
-    if (!isFloating) {
-      setIsResizingChat(true);
+  // Right panel resize functionality
+  const handleRightPanelMouseDown = (e) => {
+    if (!isFloating && !isRightPanelClosed) { // Don't allow resize when closed
+      setIsResizingRightPanel(true);
       e.preventDefault();
     }
   };
@@ -67,10 +69,10 @@ const ResizableLayout = ({
         setSidebarWidth(newWidth);
       }
       
-      if (isResizingChat && !isFloating) {
+      if (isResizingRightPanel && !isFloating && !isRightPanelClosed) {
         const containerRect = containerRef.current.getBoundingClientRect();
         const newWidth = Math.max(250, Math.min(500, containerRect.right - e.clientX));
-        setChatWidth(newWidth);
+        setRightPanelWidth(newWidth);
       }
 
       if (isDraggingChat && isFloating) {
@@ -83,11 +85,11 @@ const ResizableLayout = ({
 
     const handleMouseUp = () => {
       setIsResizingSidebar(false);
-      setIsResizingChat(false);
+      setIsResizingRightPanel(false);
       setIsDraggingChat(false);
     };
 
-    if (isResizingSidebar || isResizingChat || isDraggingChat) {
+    if (isResizingSidebar || isResizingRightPanel || isDraggingChat) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       
@@ -96,7 +98,7 @@ const ResizableLayout = ({
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizingSidebar, isResizingChat, isDraggingChat, dragOffset, isFloating]);
+  }, [isResizingSidebar, isResizingRightPanel, isDraggingChat, dragOffset, isFloating, isRightPanelClosed]);
 
   // Update detached chat window when messages change
   useEffect(() => {
@@ -127,7 +129,6 @@ const ResizableLayout = ({
   };
 
   const openChatInNewWindow = () => {
-    // Open new window for chat
     const newWindow = window.open(
       '',
       'ChatWindow',
@@ -135,14 +136,12 @@ const ResizableLayout = ({
     );
 
     if (newWindow) {
-      // Store the window reference
       setDetachedChatWindow(newWindow);
       
-      // Handle window close
       newWindow.addEventListener('beforeunload', () => {
         setDetachedChatWindow(null);
       });
-      // Set up the new window content
+      
       newWindow.document.title = 'Collaborative Code Editor - Chat';
       newWindow.document.head.innerHTML = `
         <meta charset="UTF-8">
@@ -153,7 +152,7 @@ const ResizableLayout = ({
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: "Outfit", sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
           }
           
           body {
@@ -268,7 +267,6 @@ const ResizableLayout = ({
         </style>
       `;
 
-      // Initial render of chat content
       renderChatInNewWindow(newWindow);
     }
   };
@@ -302,45 +300,34 @@ const ResizableLayout = ({
             placeholder="Type a message..." 
             maxlength="200"
             id="detached-input"
-            style="direction: ltr; unicode-bidi: normal; text-align: left;"
           />
           <button type="submit" class="detached-chat-send-btn">Send</button>
         </form>
       </div>
     `;
 
-    // Add event listeners
     const form = targetWindow.document.getElementById('detached-chat-form');
     const input = targetWindow.document.getElementById('detached-input');
     
-    // Set up input value
     if (input) {
-    input.value = chatInput || "";
-    input.setSelectionRange(input.value.length, input.value.length);
-    input.addEventListener('input', (e) => {
-      setChatInput(e.target.value);
-    });
-    input.focus();
-  }
+      input.value = chatInput || "";
+      input.addEventListener('input', (e) => {
+        setChatInput(e.target.value);
+      });
+      input.focus();
+    }
     
     if (form && input) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         const message = input.value.trim();
         if (message) {
-          // Use the setChatInput to update the parent component's state
           setChatInput(message);
-          
-          // Create a synthetic event to send the message
           const syntheticEvent = {
             preventDefault: () => {},
             target: { value: message }
           };
-          
-          // Send the message using the parent's sendChatMessage function
           sendChatMessage(syntheticEvent);
-          
-          // Clear the input
           input.value = '';
           setChatInput('');
         }
@@ -350,11 +337,9 @@ const ResizableLayout = ({
         setChatInput(e.target.value);
       });
 
-      // Focus input
       input.focus();
     }
 
-    // Auto-scroll to bottom
     const messagesContainer = targetWindow.document.getElementById('detached-messages');
     if (messagesContainer) {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -369,7 +354,7 @@ const ResizableLayout = ({
           <head>
             <title>Chat - Collaborative Code Editor</title>
             <style>
-              body { margin: 0; font-family: 'Outfit', sans-serif; background: #191a1b; color: white; }
+              body { margin: 0; font-family: system-ui, sans-serif; background: #191a1b; color: white; }
               .chat-container { height: 100vh; padding: 1rem; box-sizing: border-box; }
             </style>
           </head>
@@ -406,47 +391,23 @@ const ResizableLayout = ({
         {editor}
       </div>
 
-      {/* Chat panel (only if not detached) */}
-      {!isChatDetached && (
-        <>
-          {/* Chat resize handle */}
-          {!isChatMinimized && (
-            <div
-              className="resize-handle chat-resize"
-              onMouseDown={handleChatMouseDown}
-            />
-          )}
-          
-          <div 
-            className={`resizable-chat ${isChatMinimized ? 'minimized' : ''}`}
-            style={{ width: isChatMinimized ? '50px' : `${chatWidth}px` }}
-          >
-            <div className="chat-header">
-              <div className="chat-controls">
-                <button 
-                  className="chat-control-btn minimize"
-                  onClick={toggleChatMinimize}
-                  title={isChatMinimized ? "Expand Chat" : "Minimize Chat"}
-                >
-                  {isChatMinimized ? '📈' : '📉'}
-                </button>
-                <button 
-                  className="chat-control-btn detach"
-                  onClick={openChatInNewWindow}
-                  title="Open Chat in New Window"
-                >
-                  🗗
-                </button>
-              </div>
-              {!isChatMinimized && <h3>Chat</h3>}
-            </div>
-            {!isChatMinimized && (
-              <div className="chat-content">
-                {chatPanel}
-              </div>
-            )}
-          </div>
-        </>
+      {/* Right Panel resize handle - only show when panel is not closed */}
+      {rightPanel && !isChatDetached && !isRightPanelClosed && (
+        <div
+          className="resize-handle rightpanel-resize"
+          ref={rightPanelResizeRef}
+          onMouseDown={handleRightPanelMouseDown}
+        />
+      )}
+      
+      {/* Right Panel */}
+      {rightPanel && !isChatDetached && (
+        <div 
+          className={`resizable-rightpanel ${isRightPanelClosed ? 'closed' : ''}`}
+          style={{ width: isRightPanelClosed ? '60px' : `${rightPanelWidth}px` }}
+        >
+          {rightPanel}
+        </div>
       )}
 
       {/* Floating chat panel */}
@@ -457,7 +418,7 @@ const ResizableLayout = ({
           style={{
             left: `${floatingChatPosition.x}px`,
             top: `${floatingChatPosition.y}px`,
-            width: `${chatWidth}px`
+            width: `${rightPanelWidth}px`
           }}
         >
           <div 
@@ -478,12 +439,12 @@ const ResizableLayout = ({
                 onClick={openChatInNewTab}
                 title="Open in New Tab"
               >
-                �
+                📄
               </button>
             </div>
           </div>
           <div className="floating-chat-content">
-            {chat}
+            {rightPanel}
           </div>
         </div>
       )}

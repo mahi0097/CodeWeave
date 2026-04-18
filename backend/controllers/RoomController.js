@@ -199,7 +199,7 @@ class RoomController {
       }
 
       // Leave previous room if any
-      const previousRoom = user.roomId;
+      const previousRoom = user.currentRoom;
       if (previousRoom) {
         socket.leave(previousRoom);
         const { users } = roomService.removeUserFromRoom(previousRoom, user.userName);
@@ -273,8 +273,8 @@ class RoomController {
   handleLeaveRoom(socket) {
     try {
       const user = userService.getUser(socket.id);
-      if (user && user.getCurrentRoom()) {
-        const roomId = user.getCurrentRoom();
+      if (user && user.currentRoom) {
+        const roomId = user.currentRoom;
         const userName = user.userName;
 
         socket.leave(roomId);
@@ -325,7 +325,7 @@ class RoomController {
     try {
       const user = userService.getUser(socket.id);
       if (user) {
-        const roomId = user.getCurrentRoom();
+        const roomId = user.currentRoom;
         const userName = user.userName;
 
         if (roomId) {

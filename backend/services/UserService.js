@@ -90,7 +90,7 @@ class UserService {
   // Get user info
   getUserInfo(socketId) {
     const user = this.getUser(socketId);
-    return user ? user.getInfo() : null;
+    return user ? user.info : null;
   }
 
   // Update user name
@@ -107,7 +107,7 @@ class UserService {
     const usersInRoom = [];
     for (const [socketId, user] of this.users) {
       if (user.currentRoom === roomId) {
-        usersInRoom.push(user.getInfo());
+        usersInRoom.push(user.info);
       }
     }
     return usersInRoom;

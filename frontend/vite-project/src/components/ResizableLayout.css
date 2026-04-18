@@ -4,6 +4,7 @@
   height: 100vh;
   width: 100%;
   position: relative;
+  
   overflow: hidden;
 }
 
@@ -570,4 +571,20 @@
   direction: ltr;
   unicode-bidi: normal;
   text-align: left;
+}
+/* Add to your ResizableLayout.css */
+.resizable-rightpanel.closed {
+  width: 60px !important;
+  min-width: 60px !important;
+  overflow: visible;
+}
+
+.rightpanel-resize {
+  display: flex;
+}
+
+/* When right panel is closed, hide the resize handle */
+.resizable-rightpanel.closed ~ .rightpanel-resize,
+.resizable-rightpanel.closed + .rightpanel-resize {
+  display: none;
 }

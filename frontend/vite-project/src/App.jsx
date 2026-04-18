@@ -1,3 +1,4 @@
+// frontend/vite-project/src/App.jsx
 import { useCallback, useEffect, useState, useRef } from "react";
 import "./App.css";
 import io from "socket.io-client";
@@ -22,7 +23,8 @@ import {
   getAllSupportedLanguages,
   isLanguageSupported,
 } from "./utils/fileTypeDetection";
-
+import LeftPanel from './components/LeftPanel';
+import RightPanel from './components/RightPanel';
 import BackToTop from "./components/ui/BackToTop";
 
 import * as monaco from "monaco-editor";
@@ -83,7 +85,21 @@ const App = () => {
   const decorationsRef = useRef({});
   const widgetsRef = useRef({});
   const colorCacheRef = useRef({});
+  // Add this with your other state declarations
+const [isRightPanelMinimized, setIsRightPanelMinimized] = useState(false);
 
+// Add this function
+const toggleRightPanelMinimize = () => {
+  setIsRightPanelMinimized(!isRightPanelMinimized);
+};
+
+// Add with your other state declarations (around line 60)
+const [isRightPanelClosed, setIsRightPanelClosed] = useState(false);
+
+// Add this function (around line 400)
+const toggleRightPanelClose = () => {
+  setIsRightPanelClosed(!isRightPanelClosed);
+};
   // Scroll Control State
   const messagesEndRef = useRef(null);
   const [outputHeight, setOutputHeight] = useState(200);
@@ -1326,379 +1342,228 @@ const App = () => {
     );
   }
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
+ return (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
 
-        <>
-          <ResizableLayout
-            sidebar={
-              <div className="sidebar">
-                <button onClick={toggleTheme} className="theme-toggle-btn">
-                  {theme === "light" ? "☀️ Light Mode" : "🌙 Dark Mode"}
+      <>
+        <ResizableLayout
+          sidebar={
+            <LeftPanel 
+              roomId={roomId}
+              userName={userName}
+              users={users}
+              typing={typing}
+              files={files}
+              activeFile={activeFile}
+              onFileCreate={handleFileCreate}
+              onFileDelete={handleFileDelete}
+              onFileRename={handleFileRename}
+              onFileSwitch={handleFileSwitch}
+              filename={filename}
+              pendingFilename={pendingFilename}
+              onFilenameChange={handleFilenameChange}
+              onSaveFilename={saveFilenameChange}
+              language={language}
+              onLanguageChange={handleManualLanguageChange}
+              showAllLanguages={showAllLanguages}
+              onToggleLanguages={() => setShowAllLanguages(!showAllLanguages)}
+              onLeaveRoom={leaveRoom}
+              undoRedoState={undoRedoState}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              isUndoing={isUndoing}
+              isRedoing={isRedoing}
+              onCreateCheckpoint={createCheckpoint}
+              isCreatingCheckpoint={isCreatingCheckpoint}
+              onShowVersionHistory={() => setShowVersionHistory(true)}
+              onToggleTheme={toggleTheme}
+              theme={theme}
+              copyRoomId={copyRoomId}
+            />
+          }
+          editor={
+            <div className="editor-wrapper" ref={containerRef}>
+              <div className="editor-header">
+                <span className="current-file-indicator">
+                  📄 {activeFile || filename}
+                  {activeFile && (
+                    <span className="file-language-badge">
+                      {getLanguageDisplayName(currentFileLanguage)}
+                    </span>
+                  )}
+                </span>
+                <button
+                  onClick={runCode}
+                  disabled={isRunning}
+                  style={{
+                    marginLeft: "12px",
+                    padding: "6px 14px",
+                    backgroundColor: "#16a34a",
+                    color: "white",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                  }}
+                >
+                  {isRunning ? "Running..." : "▶ Run"}
                 </button>
-                <div className="room-info">
-                  <h2>Code Room: {roomId}</h2>
-                  <button
-                    className="copy-room-id-btn"
-                    onClick={copyRoomId}
-                    title="Copy Room ID to clipboard"
-                  >
-                    <span className="copy-icon">📋</span>
-                    <span className="copy-text">Copy ID</span>
-                  </button>
-                </div>
-                <h3>
-                  Users in Room:{" "}
-                  <span style={{ fontWeight: "bold", color: "#2563eb" }}>
-                    {users.length}
-                  </span>
-                </h3>
-                <ul>
-                  {users.map((user, index) => (
-                    <li key={index}>{user.slice(0, 8)}</li>
-                  ))}
-                </ul>
-                <p className="typing-indicator">{typing}</p>
-
-                {/* File Explorer Component */}
-                <FileExplorer
-                  files={files}
-                  activeFile={activeFile}
-                  onFileCreate={handleFileCreate}
-                  onFileDelete={handleFileDelete}
-                  onFileRename={handleFileRename}
-                  onFileSwitch={handleFileSwitch}
-                  userName={userName}
+              </div>
+              
+              <div
+                style={{
+                  position: "relative",
+                  height: `calc(100% - ${outputHeight}px - 40px)`,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <Editor
+                  height="100%"
+                  language={currentFileLanguage}
+                  value={currentFileContent || code}
+                  onChange={handleChange}
+                  onMount={handleEditorOnMount}
+                  theme={theme === "dark" ? "vs-dark" : "vs-light"}
+                  options={{
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: "on",
+                    automaticLayout: true,
+                  }}
                 />
-
-                <div className="file-controls">
-                  <h3>Current File Settings</h3>
-                  <div className="filename-input-group">
-                    <label htmlFor="filename">Active File:</label>
-                    <input
-                      id="filename"
-                      type="text"
-                      className="filename-input"
-                      value={pendingFilename || filename}
-                      onChange={handleFilenameChange}
-                      placeholder="e.g., main.js, script.py"
-                    />
-                    <button
-                      onClick={saveFilenameChange}
-                      className="save-filename-btn"
-                    >
-                      Rename
-                    </button>
+                
+                
+                {!(currentFileContent || code) && (
+                  <div
+                    className={`absolute top-0 left-[74px] text-sm pointer-events-none ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    start typing here...
                   </div>
+                )}
+              </div>
 
-                  <div className="language-selector-group">
-                    <label htmlFor="language">Language:</label>
-                    <select
-                      id="language"
-                      className="language-selector"
-                      value={language}
-                      onChange={handleManualLanguageChange}
-                    >
-                      <optgroup label="Popular Languages">
-                        {getPopularLanguages().map((lang) => (
-                          <option key={lang.id} value={lang.id}>
-                            {lang.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                      {showAllLanguages && (
-                        <optgroup label="All Languages">
-                          {getAllSupportedLanguages()
-                            .filter(
-                              (lang) =>
-                                !getPopularLanguages().some(
-                                  (popular) => popular.id === lang.id,
-                                ),
-                            )
-                            .map((lang) => (
-                              <option key={lang.id} value={lang.id}>
-                                {lang.name}
-                              </option>
-                            ))}
-                        </optgroup>
-                      )}
-                    </select>
-                    <button
-                      type="button"
-                      className="show-all-languages-btn"
-                      onClick={() => setShowAllLanguages(!showAllLanguages)}
-                    >
-                      {showAllLanguages ? "Show Less" : "Show All"}
-                    </button>
-                  </div>
-
-                  <div className="language-info">
-                    <small>
-                      Current:{" "}
-                      <strong>{getLanguageDisplayName(language)}</strong>
-                    </small>
-                  </div>
-                </div>
-                <button className="leave-button" onClick={leaveRoom}>
-                  Leave Room
-                </button>
-
-                <div className="version-controls">
-                  <h3>Version History</h3>
-                  <div className="version-buttons">
-                    <button
-                      className={`version-btn undo-btn ${
-                        !undoRedoState.canUndo || isUndoing ? "disabled" : ""
-                      } ${isUndoing ? "loading" : ""}`}
-                      onClick={handleUndo}
-                      disabled={!undoRedoState.canUndo || isUndoing}
-                      title="Undo (Ctrl+Z)"
-                    >
-                      {isUndoing ? "Undoing..." : "Undo"}
-                    </button>
-                    <button
-                      className={`version-btn redo-btn ${
-                        !undoRedoState.canRedo || isRedoing ? "disabled" : ""
-                      } ${isRedoing ? "loading" : ""}`}
-                      onClick={handleRedo}
-                      disabled={!undoRedoState.canRedo || isRedoing}
-                      title="Redo (Ctrl+Y)"
-                    >
-                      {isRedoing ? "Redoing..." : "Redo"}
-                    </button>
-                  </div>
-                  <div className="version-info">
-                    <span className="version-count">
-                      {undoRedoState.currentVersionIndex + 1} /{" "}
-                      {undoRedoState.totalVersions}
+              <div
+                style={{
+                  position: "relative",
+                  height: `${outputHeight}px`,
+                  display: "flex",
+                  flexDirection: "column",
+                  borderTop: "1px solid #334155",
+                }}
+              >
+                <div
+                  style={{
+                    height: "6px",
+                    background: "#334155",
+                    cursor: "row-resize",
+                    position: "absolute",
+                    top: "-3px",
+                    left: 0,
+                    right: 0,
+                    zIndex: 10,
+                  }}
+                  onMouseDown={handleResizeMouseDown}
+                />
+                
+                <div
+                  style={{
+                    flex: 1,
+                    background: "#0f172a",
+                    color: "#22c55e",
+                    padding: "10px",
+                    overflowY: "auto",
+                    fontSize: "14px",
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  <div style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center",
+                    marginBottom: "8px",
+                    paddingBottom: "4px",
+                    borderBottom: "1px solid #334155"
+                  }}>
+                    <strong>Output:</strong>
+                    <span style={{ 
+                      fontSize: "12px", 
+                      color: "#94a3b8",
+                      cursor: "pointer"
+                    }} onClick={() => setOutputHeight(200)}>
+                      Reset Height
                     </span>
                   </div>
-                  <button
-                    className="version-btn history-btn"
-                    onClick={() => setShowVersionHistory(true)}
-                    title="View version history"
-                  >
-                    History
-                  </button>
-                  <button
-                    className={`version-btn checkpoint-btn ${
-                      isCreatingCheckpoint ? "loading" : ""
-                    }`}
-                    onClick={createCheckpoint}
-                    disabled={isCreatingCheckpoint}
-                    title="Create checkpoint"
-                  >
-                    {isCreatingCheckpoint ? "Creating..." : "Checkpoint"}
-                  </button>
+                  <pre style={{ 
+                    margin: 0, 
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    flex: 1
+                  }}>
+                    {output}
+                  </pre>
                 </div>
               </div>
-            }
-            editor={
-              <div className="editor-wrapper" ref={containerRef}>
-                <div className="editor-header">
-                  <span className="current-file-indicator">
-                    📄 {activeFile || filename}
-                    {activeFile && (
-                      <span className="file-language-badge">
-                        {getLanguageDisplayName(currentFileLanguage)}
-                      </span>
-                    )}
-                  </span>
-                  {/* RUN BUTTON */}
-                  <button
-                    onClick={runCode}
-                    disabled={isRunning}
-                    style={{
-                      marginLeft: "12px",
-                      padding: "6px 14px",
-                      backgroundColor: "#16a34a",
-                      color: "white",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {isRunning ? "Running..." : "▶ Run"}
-                  </button>
-                </div>
-                
-                {/* MAIN EDITOR CONTAINER */}
-                <div
-                  style={{
-                    position: "relative",
-                    height: `calc(100% - ${outputHeight}px - 40px)`,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  {/* SINGLE EDITOR COMPONENT */}
-                  <Editor
-                    height="100%"
-                    language={currentFileLanguage}
-                    value={currentFileContent || code}
-                    onChange={handleChange}
-                    onMount={handleEditorOnMount}
-                    theme={theme === "dark" ? "vs-dark" : "vs-light"}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 14,
-                      lineNumbers: "on",
-                      automaticLayout: true,
-                    }}
-                  />
-                  
-                  {!(currentFileContent || code) && (
-                    <div
-                      className={`absolute top-0 left-[74px] text-sm pointer-events-none ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    >
-                      start typing here...
-                    </div>
-                  )}
-                </div>
 
-                {/* RESIZABLE OUTPUT PANEL */}
-                <div
-                  style={{
-                    position: "relative",
-                    height: `${outputHeight}px`,
-                    display: "flex",
-                    flexDirection: "column",
-                    borderTop: "1px solid #334155",
-                  }}
-                >
-                  {/* RESIZE HANDLE */}
-                  <div
-                    style={{
-                      height: "6px",
-                      background: "#334155",
-                      cursor: "row-resize",
-                      position: "absolute",
-                      top: "-3px",
-                      left: 0,
-                      right: 0,
-                      zIndex: 10,
-                    }}
-                    onMouseDown={handleResizeMouseDown}
-                  />
-                  
-                  {/* OUTPUT PANEL CONTENT */}
-                  <div
-                    style={{
-                      flex: 1,
-                      background: "#0f172a",
-                      color: "#22c55e",
-                      padding: "10px",
-                      overflowY: "auto",
-                      fontSize: "14px",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <div style={{ 
-                      display: "flex", 
-                      justifyContent: "space-between", 
-                      alignItems: "center",
-                      marginBottom: "8px",
-                      paddingBottom: "4px",
-                      borderBottom: "1px solid #334155"
-                    }}>
-                      <strong>Output:</strong>
-                      <span style={{ 
-                        fontSize: "12px", 
-                        color: "#94a3b8",
-                        cursor: "pointer"
-                      }} onClick={() => setOutputHeight(200)}>
-                        Reset Height
-                      </span>
-                    </div>
-                    <pre style={{ 
-                      margin: 0, 
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      flex: 1
-                    }}>
-                      {output}
-                    </pre>
-                  </div>
-                </div>
+              <VideoCall
+                socket={socket}
+                roomId={roomId}
+                userName={userName}
+                joined={joined}
+              />
+            </div>
+          }
+          rightPanel={
+            <RightPanel
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              onChatInputChange={setChatInput}
+              onSendChatMessage={sendChatMessage}
+              geminiApiKey={import.meta.env.VITE_GEMINI_API_KEY}
+              userName={userName} 
+              isClosed={isRightPanelClosed}
+              onToggleClose={toggleRightPanelClose}
+            />
+          }
+          isRightPanelClosed={isRightPanelClosed}
+          onChatDetach={handleChatDetach}
+          isChatDetached={isChatDetached}
+          onChatMinimize={handleChatMinimize}
+          isChatMinimized={isChatMinimized}
+          chatMessages={chatMessages}
+          chatInput={chatInput}
+          setChatInput={setChatInput}
+          sendChatMessage={sendChatMessage}
+          socket={socket}
+          roomId={roomId}
+          userName={userName}
+        />
 
-                <VideoCall
-                  socket={socket}
-                  roomId={roomId}
-                  userName={userName}
-                  joined={joined}
-                />
-              </div>
-            }
-            chatPanel={
-              <div className="chat-panel-content">
-                <div
-                  className="chat-messages"
-                  ref={messagesEndRef}
-                  style={{ overflowY: "auto", maxHeight: "100%" }}
-                >
-                  {chatMessages.map((msg, idx) => (
-                    <div key={idx} className="chat-message">
-                      <span className="chat-user">
-                        {msg.userName.slice(0, 8)}:
-                      </span>{" "}
-                      {msg.message}
-                    </div>
-                  ))}
-                </div>
-                <form className="chat-input-form" onSubmit={sendChatMessage}>
-                  <input
-                    className="chat-input"
-                    type="text"
-                    placeholder="Type a message..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    maxLength={200}
-                  />
-                  <button type="submit" className="chat-send-btn">
-                    Send
-                  </button>
-                </form>
-              </div>
-            }
-            onChatDetach={handleChatDetach}
-            isChatDetached={isChatDetached}
-            onChatMinimize={handleChatMinimize}
-            isChatMinimized={isChatMinimized}
+        {/* Detached Chat Window */}
+        {isChatDetached && (
+          <ChatWindow
             chatMessages={chatMessages}
             chatInput={chatInput}
             setChatInput={setChatInput}
             sendChatMessage={sendChatMessage}
-            socket={socket}
-            roomId={roomId}
-            userName={userName}
+            onClose={() => setIsChatDetached(false)}
           />
+        )}
 
-          {/* Detached Chat Window */}
-          {isChatDetached && (
-            <ChatWindow
-              chatMessages={chatMessages}
-              chatInput={chatInput}
-              setChatInput={setChatInput}
-              sendChatMessage={sendChatMessage}
-              onClose={() => setIsChatDetached(false)}
-            />
-          )}
-
-          {/* Version History Modal */}
-          <VersionHistory
-            socket={socket}
-            roomId={roomId}
-            isOpen={showVersionHistory}
-            onClose={() => setShowVersionHistory(false)}
-          />
-        </>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
+        {/* Version History Modal */}
+        <VersionHistory
+          socket={socket}
+          roomId={roomId}
+          isOpen={showVersionHistory}
+          onClose={() => setShowVersionHistory(false)}
+        />
+      </>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 };
 
 export default App;

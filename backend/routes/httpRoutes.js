@@ -2,7 +2,6 @@
 import express from 'express';
 import RoomController from '../controllers/RoomController.js';
 import VideoCallController from '../controllers/VideoCallController.js';
-import compilerRoute from "./compiler.js";
 
 // Create controller instances (io will be null for HTTP routes)
 const roomController = new RoomController(null);
@@ -20,7 +19,7 @@ router.get('/health', (req, res) => {
 });
 
 // compiler routes
-router.use("/api/compiler", compilerRoute);
+
 
 
 // Get room statistics
